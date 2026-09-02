@@ -1,17 +1,17 @@
 # Send course receipts with delivery reporting
 
-This Node service takes a paid course order, works out the learner's access deadline, sends the receipt, and hands back a delivery record an educator dashboard can persist. Infrai keeps both email sends behind one API and a single`INFRAI_API_KEY`, which sits naturally next to a Next.js checkout route without pulling in extra client libraries.
+This small Node service accepts a paid course order, computes the learner's access deadline, sends the receipt, and returns a delivery record an educator dashboard can store. Infrai keeps the two email calls behind one API and a single `INFRAI_API_KEY`, which fits naturally beside a Next.js checkout route.
 
 ## Start with the working path
 
-Use Node 20 or newer, then run the focused test before sending any mail:
+Use Node 20 or newer, then run the focused test before sending mail:
 
 ```bash
 npm install
 npm test
 ```
 
-The test posts a course starting at`2026-09-01T09:00:00.000Z`with 30 access days. It expects an access deadline of`2026-10-01T09:00:00.000Z`, confirms that deadline shows in the learner's receipt, and verifies the returned`message_id`is forwarded into educator reporting.
+The test submits a course starting at `2026-09-01T09:00:00.000Z` with 30 access days. It expects an access deadline of `2026-10-01T09:00:00.000Z`, checks that deadline in the learner's receipt, and verifies that the returned `message_id` is passed into educator reporting.
 
 To send the sample receipt:
 
@@ -21,11 +21,11 @@ export LEARNER_EMAIL="learner@example.com"
 npm run demo
 ```
 
-A successful result carries the order ID, computed deadline, email message ID, and the delivery data fetched for the educator report.
+The successful result contains the order ID, computed deadline, email message ID, and the delivery data fetched for the educator report.
 
 ## Put it behind your checkout
 
-Start the service with`npm start`, then post the same shape a Next.js server action or route handler would produce:
+Start the service with `npm start`, then post the same shape a Next.js server action or route handler would produce:
 
 ```bash
 curl -X POST http://localhost:3000/receipts \
@@ -43,9 +43,9 @@ curl -X POST http://localhost:3000/receipts \
   }'
 ```
 
-Zod rejects malformed bodies at the request boundary. The domain function adds`accessDays`to`startsAt`in UTC, renders that deadline in the receipt, calls`infrai.email.send`, and uses its`message_id`with`infrai.email.get`. That handoff is the useful seam for an educator's order and delivery report.
+Zod rejects malformed bodies at the request boundary. The domain function adds `accessDays` to `startsAt` in UTC, renders that deadline in the receipt, calls `infrai.email.send`, and uses its `message_id` with `infrai.email.get`. That handoff is the useful seam for an educator's order and delivery report.
 
-The one real gotcha is response ordering: parse the`{ ok, data, error, metadata }`envelope before deciding what an HTTP status means. The thin client preserves that API error for the service to map, backs off on`429`, and reuses an order-derived idempotency key for send retries.
+The one real gotcha is response ordering: parse the `{ ok, data, error, metadata }` envelope before deciding what an HTTP status means. The thin client preserves that API error for the service to map, backs off on `429`, and reuses an order-derived idempotency key for send retries.
 
 Only the learner-facing receipt is HTML. Persisting the returned report or rendering an educator dashboard belongs to the host application.
 
